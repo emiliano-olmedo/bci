@@ -13,6 +13,7 @@ JDBC URL:    	jdbc:h2:mem:userdb
 User Name:   	SA
 Password:   	(deja este campo vacío)
 
+Para una correcta visualización de los diagramas, se recomienda abrir archivo README.md en IDE.
 
 Diagrama de componentes:
 
