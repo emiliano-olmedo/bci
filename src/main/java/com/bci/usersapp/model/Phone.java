@@ -29,13 +29,13 @@ public class Phone {
     private Long id;
 
     @Column(name = "NUMBER")
-    private Integer number;
+    private Long number;
 
     @Column(name = "CITY_CODE")
     private Integer cityCode;
 
     @Column(name = "COUNTRY_CODE")
-    private Integer countryCode;
+    private String countryCode;
 
     @ManyToOne
     @JoinColumn(name = "USER_ID")

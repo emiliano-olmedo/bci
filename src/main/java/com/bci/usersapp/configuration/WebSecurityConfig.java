@@ -49,6 +49,7 @@ public class WebSecurityConfig {
                                 new AntPathRequestMatcher("/swagger-ui/**"),
                                 new AntPathRequestMatcher("/generateToken"),
                                 new AntPathRequestMatcher("/signup"),
+				new AntPathRequestMatcher("/login"),
                                 new AntPathRequestMatcher("/h2-console/**"))
                         .permitAll()
                         .anyRequest()
