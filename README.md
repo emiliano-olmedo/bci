@@ -17,52 +17,95 @@ Para una correcta visualización de los diagramas, se recomienda abrir archivo R
 
 Diagrama de componentes:
 
-+-----------------------+
-|   Client Application  |
-+-----------+-----------+
-|
-v
-+-----------+-----------+
-| Authentication Service |
-+-----------+-----------+
-| - User Repository      |
-| - Token Filter         |
-+-----------+-----------+
-|
-v
-+-----------+-----------+
-|       User Service     |
-+-----------+-----------+
-| - JwtUtil              |
-+-----------+-----------+
-|
-v
-+-----------+-----------+
-|        Database        |
-+-----------------------+
++-------------------------------------+
+|             AuthController          |
+|-------------------------------------|
+| - authService : AuthService         |
+|-------------------------------------|
+| + signup(request: UserRequest)      |
+| + login(authorizationHeader: token)|
++-------------------------------------+
+            | (calls)
+            v
++-------------------------------------+
+|              AuthService            |
+|-------------------------------------|
+| - jwtUtil : JwtUtil                 |
+| - userDetailsService : UserDetailsService |
+| - userRepository : UserRepository   |
+| - passwordEncoder : PasswordEncoder |
+|-------------------------------------|
+| + signup(request: UserRequest)      |
+| + processLogin(token: String)       |
+|-------------------------------------+
+            | (calls)
+            v
++-------------------------------------+
+|           CustomUserDetailsService  |
+|-------------------------------------|
+| - userRepository : UserRepository   |
+|-------------------------------------|
+| + loadUserByUsername(username: email) |
++-------------------------------------+
 
-Diagrama de secuencia:
 
-Client                       Authentication Service   User Repository         JWT Filter            Database
-|                           |                        |                       |                     |                     |
-| -----> /authenticate      |                        |                       |                     |                     |
-|       (email, password)   |                        |                       |                     |                     |
-|                           |                        |                       |                     |                     |
-|                           |                        |                       |                     |                     |
-|                           |-----> findByEmail()    |                       |                     |                     |
-|                           |       (email)          | -----> User           |                     |                     |
-|                           |                        |       (User)          |                     |                     |
-|                           |<----- User             |                       |                     |                     |
-|                           |                        |                       |                     |                     |
-|                           |-----> authenticate()   |                       |                     |                     |
-|                           |      (email, password) |                       |                     |                     |
-|                           |                        |                       |                     |                     |
-|                           |<----- success          |                       |                     |                     |
-|                           |                        |                       |                     |                     |
-|                           |-----> generateToken()  |                       |                     |                     |
-|                           |       (UserDetails)    |                       |                     |                     |
-|                           |                        |                       |-----> Token         |                     |
-|                           |                        |                       |<----- Token         |                     |
-|                           |<----- Token            |                       |                     |                     |
-| <----- Token              |                        |                       |                     |                     |
-|                           |                        |                       |                     |                     |
+Diagramas de secuencia:
+
+signup
+
++-------------------+      +-----------------+      +------------------------+
+|    AuthController |      |   AuthService   |      |  UserRepository        |
++-------------------+      +-----------------+      +------------------------+
+         |                        |                           |
+         | 1. signup(request)     |                           |
+         |----------------------->|                           |
+         |                        | 2. validatePassword()     |
+         |                        |-------------------------->|
+         |                        |                           |
+         |                        | 3. validateEmail()        |
+         |                        |-------------------------->|
+         |                        |                           |
+         |                        | 4. checkEmailExists()     |
+         |                        |-------------------------->|
+         |                        |                           |
+         |                        | 5. userRepository.save()  |
+         |                        |-------------------------->|
+         |                        |                           |
+         |                        | 6. generateToken()        |
+         |                        |-------------------------->|
+         |                        |                           |
+         |                        | 7. return UserResponse    |
+         |<-----------------------|                           |
+         |                        |                           |
+         | 8. return Response     |                           |
+         |----------------------->|                           |
+         |                        |                           |
+
+login
+
++-------------------+      +-----------------+      +------------------------+      +-----------------------+
+|    AuthController |      |   AuthService   |      |CustomUserDetailsService|      |  JwtUtil              |
++-------------------+      +-----------------+      +------------------------+      +-----------------------+
+         |                        |                           |                            |
+         | 1. login(token)        |                           |                            |
+         |----------------------->|                           |                            |
+         |                        | 2. extractUsername()      |                            |
+         |                        |-------------------------->|
+         |                        |                           |                            |
+         |                        | 3. validateToken()        |                            |
+         |                        |-------------------------->|
+         |                        |                           | 4. loadUserByUsername()    |
+         |                        |                           |--------------------------> |
+         |                        |                           |                            |
+         |                        | 5. findByEmail()          |                            |
+         |                        |-------------------------->|
+         |                        |                           |                            |
+         |                        | 6. generateToken()        |                            |
+         |                        |-------------------------->|
+         |                        |                           |                            |
+         |                        | 7. return UserResponse    |                            |
+         |<-----------------------|                           |                            |
+         |                        |                           |                            |
+         | 8. return Response     |                           |                            |
+         |----------------------->|                           |                            |
+         |                        |                           |                            |
