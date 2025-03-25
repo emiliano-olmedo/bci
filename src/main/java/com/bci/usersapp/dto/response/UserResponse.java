@@ -1,5 +1,6 @@
 package com.bci.usersapp.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Builder
@@ -15,6 +17,7 @@ import java.util.UUID;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponse {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID userId;
@@ -33,4 +36,17 @@ public class UserResponse {
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean isActive;
+
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private String name;
+
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private String email;
+
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private String password;
+
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private List<PhoneResponse> phones;
+
 }

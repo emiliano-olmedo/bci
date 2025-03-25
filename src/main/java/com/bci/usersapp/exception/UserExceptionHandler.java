@@ -16,6 +16,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -37,14 +41,22 @@ public class UserExceptionHandler {
                     .collect(Collectors.joining(DELIMITER_COMMA));
         }
 
-        var errorResponse = ErrorResponse.builder().message(message).build();
+        var errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .codigo(HttpStatus.BAD_REQUEST.value())
+                .detail(message)
+                .build();
         log.error("methodArgumentNotValidException => {} in => {}", errorResponse, objectName);
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> badCredentials(BadCredentialsException ex) {
-        var errorResponse = ErrorResponse.builder().message("The username or password is incorrect").build();
+        var errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .codigo(HttpStatus.UNAUTHORIZED.value())
+                .detail("The username or password is incorrect")
+                .build();
         log.error("badCredentials: {} , {}", ex, errorResponse);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
@@ -52,15 +64,22 @@ public class UserExceptionHandler {
     @ExceptionHandler({AccountStatusException.class, AuthenticationException.class,
             AccessDeniedException.class, SignatureException.class, ExpiredJwtException.class})
     public ResponseEntity<ErrorResponse> generalException(Exception ex) {
-        var errorResponse = ErrorResponse.builder().message(ex.getMessage()).build();
+        var errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .codigo(HttpStatus.FORBIDDEN.value())
+                .detail(ex.getMessage())
+                .build();
         log.error("generalException: {} ", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
     @ExceptionHandler
-    public ResponseEntity<ErrorResponse> userException(UserException ex) {
+    public ResponseEntity<Map<String, List<ErrorResponse>>> userException(UserException ex) {
         var errorResponse = ex.getErrorResponse();
+        var errorsList = Collections.singletonList(errorResponse);
+
         log.error("UserException: {} , message:{}", ex, ex.getMessage());
-        return ResponseEntity.status(errorResponse.getStatus()).body(errorResponse);
+        return ResponseEntity.status(HttpStatus.valueOf(errorResponse.getCodigo()))
+                .body(Collections.singletonMap("error", errorsList));
     }
 }

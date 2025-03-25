@@ -19,7 +19,7 @@ public class PhoneResponse {
 
     @NotNull(message = "'number' is required")
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED, example = "87650009", description = "number")
-    private Integer number;
+    private Long number;
 
     @NotNull(message = "'cityCode' is required")
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED, example = "7", description = "city code")
@@ -27,11 +27,6 @@ public class PhoneResponse {
 
     @NotNull(message = "'countryCode' is required")
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED, example = "25", description = "country code")
-    private Integer countryCode;
+    private String countryCode;
 
-    public PhoneResponse(int number, int cityCode, int countryCode) {
-        this.number = number;
-        this.cityCode = cityCode;
-        this.countryCode = countryCode;
-    }
 }

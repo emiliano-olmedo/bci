@@ -1,12 +1,11 @@
 package com.bci.usersapp.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.http.HttpStatus;
+
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -14,9 +13,7 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public class ErrorResponse {
 
-    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "Error message")
-    private String message;
-
-    @JsonIgnore
-    private HttpStatus status;
+    private LocalDateTime timestamp;
+    private int codigo;
+    private String detail;
 }

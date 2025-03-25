@@ -13,13 +13,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,7 +35,7 @@ public class User implements UserDetails {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Column(name = "NAME", nullable = true)
+    @Column(name = "NAME")
     private String name;
 
     @Column(name = "EMAIL", nullable = false)
@@ -64,17 +63,16 @@ public class User implements UserDetails {
     private String token;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    @Column(nullable = true)
     private List<Phone> phoneList;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
     public String getUsername() {
-        return null;
+        return this.email;
     }
 
     @Override

@@ -1,15 +1,11 @@
 package com.bci.usersapp.service;
 
 
-import com.bci.usersapp.dto.request.AuthRequest;
-import com.bci.usersapp.dto.request.UserRequest;
 import com.bci.usersapp.dto.response.UserResponse;
 import com.bci.usersapp.exception.UserException;
-import com.bci.usersapp.model.User;
 import com.bci.usersapp.repository.UserRepository;
 import com.bci.usersapp.utils.JwtUtil;
 import com.bci.usersapp.utils.TestUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,22 +50,16 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(this.authService, "regexpEmail", TestUtils.EMAIL_PATTEN);
-    }
-
     @Test
     @DisplayName("create user is ok")
     void whenSignUserOk() {
+        ReflectionTestUtils.setField(authService, "regexpPassword", "^(?=.*[A-Z])(?=.*\\d.*\\d)(?=.*[a-z])[a-zA-Z\\d]{8,12}$");
+        ReflectionTestUtils.setField(authService, "regexpEmail", "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z]{2,6}$");
+
         when(this.userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(this.passwordEncoder.encode(any())).thenReturn(TestUtils.PASSWORD);
         when(this.jwtUtil.generateToken(any())).thenReturn(TestUtils.TOKEN);
-        when(this.userRepository.save(any())).thenAnswer(invocation -> {
-            User user = invocation.getArgument(0);
-            user.setId(TestUtils.UUID_TEST);
-            return user;
-        });
+        when(this.userRepository.save(any())).thenReturn(TestUtils.userFound());
 
         var response = this.authService.signup(TestUtils.userRequest());
         assertEquals(TestUtils.UUID_TEST, response.getUserId());
@@ -83,15 +73,14 @@ class AuthServiceTest {
     @Test
     @DisplayName("when the email in request is invalid format")
     void whenSignUserInvalidEmail() {
-        var requestInvalidEmail = UserRequest.builder()
-                .email("email@gmail")
-                .build();
+        ReflectionTestUtils.setField(authService, "regexpPassword", "^(?=.*[A-Z])(?=.*\\d.*\\d)(?=.*[a-z])[a-zA-Z\\d]{8,12}$");
+        ReflectionTestUtils.setField(authService, "regexpEmail", "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z]{2,6}$");
 
         var exception = assertThrows(UserException.class, () -> {
-            this.authService.signup(requestInvalidEmail);
+            this.authService.signup(TestUtils.userEmailIncorrect());
         });
 
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getErrorResponse().getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), exception.getErrorResponse().getCodigo());
         assertTrue(exception.getMessage().contains("Correo formato incorrecto"));
 
         verifyNoInteractions(this.userRepository);
@@ -103,6 +92,9 @@ class AuthServiceTest {
     @Test
     @DisplayName("when the email already exist")
     void whenSignUserEmailExist() {
+        ReflectionTestUtils.setField(authService, "regexpPassword", "^(?=.*[A-Z])(?=.*\\d.*\\d)(?=.*[a-z])[a-zA-Z\\d]{8,12}$");
+        ReflectionTestUtils.setField(authService, "regexpEmail", "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z]{2,6}$");
+
         when(this.userRepository.findByEmail(anyString())).thenReturn(Optional.of(TestUtils.userFound()));
 
         var request = TestUtils.userRequest();
@@ -110,7 +102,7 @@ class AuthServiceTest {
             this.authService.signup(request);
         });
 
-        assertEquals(HttpStatus.CONFLICT, exception.getErrorResponse().getStatus());
+        assertEquals(HttpStatus.CONFLICT.value(), exception.getErrorResponse().getCodigo());
         assertEquals("Correo ya registrado", exception.getMessage());
 
         verify(this.userRepository, times(1)).findByEmail(any());
@@ -122,6 +114,8 @@ class AuthServiceTest {
     @Test
     @DisplayName("when some error to save")
     void whenSignUserError() {
+        ReflectionTestUtils.setField(authService, "regexpPassword", "^(?=.*[A-Z])(?=.*\\d.*\\d)(?=.*[a-z])[a-zA-Z\\d]{8,12}$");
+        ReflectionTestUtils.setField(authService, "regexpEmail", "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z]{2,6}$");
         when(this.userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(this.passwordEncoder.encode(any())).thenReturn(TestUtils.PASSWORD);
         when(this.jwtUtil.generateToken(any())).thenReturn(TestUtils.TOKEN);
@@ -135,8 +129,8 @@ class AuthServiceTest {
             this.authService.signup(request);
         });
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getErrorResponse().getStatus());
-        assertEquals("Problema interno.", exception.getErrorResponse().getMessage());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), exception.getErrorResponse().getCodigo());
+        assertEquals("Problema interno.", exception.getErrorResponse().getDetail());
         assertEquals(errorMessage, exception.getMessage());
 
         verify(this.userRepository, times(1)).findByEmail(any());
@@ -144,4 +138,67 @@ class AuthServiceTest {
         verify(this.jwtUtil, times(1)).generateToken(any());
         verify(this.userRepository, times(1)).save(any());
     }
+
+    @Test
+    @DisplayName("when token is ok and found user")
+    void whenProcessLoginIsSuccessful() {
+        UserDetails userDetails = TestUtils.userFound();
+        when(jwtUtil.extractUsername(TestUtils.TOKEN)).thenReturn(TestUtils.EMAIL);
+        when(userDetailsService.loadUserByUsername(TestUtils.EMAIL)).thenReturn(userDetails);
+        when(jwtUtil.validateToken(TestUtils.TOKEN, userDetails)).thenReturn(true);
+        when(userRepository.findByEmail(TestUtils.EMAIL)).thenReturn(Optional.of(TestUtils.userFound()));
+        when(jwtUtil.generateToken(userDetails)).thenReturn("new-valid-token");
+
+        UserResponse response = authService.processLogin(TestUtils.TOKEN);
+
+        assertEquals(TestUtils.UUID_TEST, response.getUserId());
+        assertEquals(TestUtils.EMAIL, response.getEmail());
+        assertEquals("new-valid-token", response.getToken());
+        assertTrue(response.getIsActive());
+
+        verify(jwtUtil, times(1)).extractUsername(TestUtils.TOKEN);
+        verify(userDetailsService, times(2)).loadUserByUsername(TestUtils.EMAIL);
+        verify(userRepository, times(1)).findByEmail(TestUtils.EMAIL);
+    }
+
+    @Test
+    @DisplayName("when token is invalid")
+    void whenProcessLoginFailsDueToInvalidToken() {
+        when(jwtUtil.extractUsername(TestUtils.INVALID_TOKEN)).thenReturn(null);
+
+        UserException exception = assertThrows(UserException.class, () -> {
+            authService.processLogin(TestUtils.INVALID_TOKEN);
+        });
+
+        assertEquals(HttpStatus.UNAUTHORIZED.value(), exception.getErrorResponse().getCodigo());
+        assertEquals("Token inválido", exception.getMessage());
+
+        verify(jwtUtil, times(1)).extractUsername(TestUtils.INVALID_TOKEN);
+        verify(userDetailsService, never()).loadUserByUsername(any());
+        verify(userRepository, never()).findByEmail(any());
+        verify(jwtUtil, never()).generateToken(any());
+    }
+
+    @Test
+    @DisplayName("when the user doesn't exist")
+    void whenProcessLoginFailsDueToUserNotFound() {
+        UserDetails userDetails = TestUtils.userFound();
+        when(jwtUtil.extractUsername(TestUtils.TOKEN)).thenReturn(TestUtils.EMAIL);
+        when(jwtUtil.validateToken(TestUtils.TOKEN, userDetails)).thenReturn(true);
+        when(userDetailsService.loadUserByUsername(TestUtils.EMAIL)).thenReturn(userDetails);
+        when(userRepository.findByEmail(TestUtils.EMAIL)).thenReturn(Optional.empty());
+
+        UserException exception = assertThrows(UserException.class, () -> {
+            authService.processLogin(TestUtils.TOKEN);
+        });
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), exception.getErrorResponse().getCodigo());
+        assertEquals("Usuario no encontrado", exception.getMessage());
+
+        verify(jwtUtil, times(1)).extractUsername(TestUtils.TOKEN);
+        verify(userDetailsService, times(2)).loadUserByUsername(TestUtils.EMAIL);
+        verify(userRepository, times(1)).findByEmail(TestUtils.EMAIL);
+        verify(jwtUtil, never()).generateToken(any());
+    }
+
 }

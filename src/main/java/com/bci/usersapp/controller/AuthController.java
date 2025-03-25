@@ -1,50 +1,38 @@
 package com.bci.usersapp.controller;
 
-import com.bci.usersapp.dto.request.AuthRequest;
 import com.bci.usersapp.dto.request.UserRequest;
 import com.bci.usersapp.dto.response.UserResponse;
 import com.bci.usersapp.service.AuthService;
-import com.bci.usersapp.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
 @RestController
+@RequestMapping("/auth")
 public class AuthController {
 
     @Autowired
     private AuthService authService;
 
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private JwtUtil jwtTokenUtil;
-
     @PostMapping("/signup")
     public ResponseEntity<UserResponse> signup(@Valid @RequestBody UserRequest registerUserDto) {
-        var userResponse = this.authService.signup(registerUserDto);
+        UserResponse userResponse = authService.signup(registerUserDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
     }
 
-    @PostMapping("/login")
-    public String createAuthenticationToken(@RequestBody AuthRequest authRequest) throws Exception {
-        return authService.authenticate(authRequest);
+    @GetMapping("/login")
+    public ResponseEntity<UserResponse> login(@RequestHeader("Authorization") String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+
+        String token = authorizationHeader.substring(7);
+        UserResponse userResponse = authService.processLogin(token);
+
+        return ResponseEntity.ok(userResponse);
     }
 
-    @GetMapping("/generateToken")
-    public ResponseEntity<?> generateToken(@RequestParam String username) {
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        String token = jwtTokenUtil.generateToken(userDetails);
-        return ResponseEntity.ok(token);
-    }
 }
