@@ -1,13 +1,14 @@
 package com.bci.usersapp;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class UsersappApplicationTests {
+public class UsersappApplicationTests {
 
 	@Test
-	void contextLoads() {
+	public void contextLoads() {
+		// This test ensures that the Spring context loads successfully.
 	}
 
 }
