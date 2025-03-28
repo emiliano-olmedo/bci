@@ -1,10 +1,7 @@
 Ejecución:
 - Clonar ropositorio: https://github.com/emiliano-olmedo/bci
 
-- Configurar entorno: Java JDK 11, Maven.
-
-- Para levantar en local, en la terminal:
-mvn spring-boot:run
+- Configurar entorno: Java JDK 11, Gradle.
 
 - Acceso a BBDD H2: 
 
