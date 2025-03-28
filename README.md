@@ -14,3 +14,5 @@ User Name:   	SA
 Password:   	(deja este campo vacío)
 
 Los diagramas se encuentran en la carpeta "diagramas".
+
+La collection de Postman se encuentra en "collection postman".
