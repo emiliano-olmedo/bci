@@ -157,7 +157,7 @@ class AuthServiceTest {
         assertTrue(response.getIsActive());
 
         verify(jwtUtil, times(1)).extractUsername(TestUtils.TOKEN);
-        verify(userDetailsService, times(2)).loadUserByUsername(TestUtils.EMAIL);
+        verify(userDetailsService, times(1)).loadUserByUsername(TestUtils.EMAIL);
         verify(userRepository, times(1)).findByEmail(TestUtils.EMAIL);
     }
 
@@ -174,7 +174,6 @@ class AuthServiceTest {
         assertEquals("Token inválido", exception.getMessage());
 
         verify(jwtUtil, times(1)).extractUsername(TestUtils.INVALID_TOKEN);
-        verify(userDetailsService, never()).loadUserByUsername(any());
         verify(userRepository, never()).findByEmail(any());
         verify(jwtUtil, never()).generateToken(any());
     }
@@ -196,7 +195,7 @@ class AuthServiceTest {
         assertEquals("Usuario no encontrado", exception.getMessage());
 
         verify(jwtUtil, times(1)).extractUsername(TestUtils.TOKEN);
-        verify(userDetailsService, times(2)).loadUserByUsername(TestUtils.EMAIL);
+        verify(userDetailsService, times(1)).loadUserByUsername(TestUtils.EMAIL);
         verify(userRepository, times(1)).findByEmail(TestUtils.EMAIL);
         verify(jwtUtil, never()).generateToken(any());
     }

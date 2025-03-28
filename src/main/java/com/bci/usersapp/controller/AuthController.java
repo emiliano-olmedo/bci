@@ -2,6 +2,7 @@ package com.bci.usersapp.controller;
 
 import com.bci.usersapp.dto.request.UserRequest;
 import com.bci.usersapp.dto.response.UserResponse;
+import com.bci.usersapp.exception.UserException;
 import com.bci.usersapp.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,7 @@ public class AuthController {
     @GetMapping("/login")
     public ResponseEntity<UserResponse> login(@RequestHeader("Authorization") String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            throw new UserException(HttpStatus.BAD_REQUEST, "Debe ingresar un token con el siguiente formato: Bearer 'token'");
         }
 
         String token = authorizationHeader.substring(7);
